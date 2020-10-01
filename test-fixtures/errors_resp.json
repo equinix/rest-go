@@ -1,0 +1,12 @@
+[
+    {
+        "errorCode": "IC-NE-ERR-400",
+        "errorMessage": "Invalid throughput and/or throughput unit",
+        "property": "throughput",
+        "moreInfo": "Please confirm the data types and values in the request body, then try again."
+    },
+    {
+        "errorCode": "IC-USR-403-DELETE",
+        "errorMessage": "You don't have permissions to perform DELETE operation. Please contact your master administrator to get the right permissions through Equinix Customer Portal or contact Equinix Support (support@equinix.com)."
+    }
+]
