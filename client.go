@@ -37,10 +37,29 @@ type ApplicationError struct {
 	Code string
 	//Message is textual description of an error
 	Message string
+	//Property is a name of resource property that is related to an error
+	Property string
+	//AdditionalInfo provides additional information about an error
+	AdditionalInfo string
 }
 
 func (e Error) Error() string {
-	return fmt.Sprintf("Equinix rest error: httpCode: %v, message: %v", e.HTTPCode, e.Message)
+	var errorStr = fmt.Sprintf("Equinix REST API error: Message: %q", e.Message)
+	if e.HTTPCode > 0 {
+		errorStr = fmt.Sprintf("%s, HTTPCode: %d", errorStr, e.HTTPCode)
+	}
+	var appErrorsStr string
+	for _, appError := range e.ApplicationErrors {
+		appErrorsStr += "[" + appError.Error() + "] "
+	}
+	if len(appErrorsStr) > 0 {
+		errorStr += ", ApplicationErrors: " + appErrorsStr
+	}
+	return errorStr
+}
+
+func (e ApplicationError) Error() string {
+	return fmt.Sprintf("Code: %q, Property: %q, Message: %q, AdditionalInfo: %q", e.Code, e.Property, e.Message, e.AdditionalInfo)
 }
 
 //NewClient creates new Equinix REST client with a given HTTP context, URL and http client.
@@ -69,16 +88,14 @@ func (c *Client) Execute(req *resty.Request, method string, path string) error {
 	url := c.baseURL + "/" + path
 	resp, err := req.SetContext(c.ctx).Execute(method, url)
 	if err != nil {
-		restErr := Error{Message: fmt.Sprintf("operation failed: %s", err)}
+		restErr := Error{Message: "HTTP operation failed: " + err.Error()}
 		if resp != nil {
 			restErr.HTTPCode = resp.StatusCode()
 		}
 		return restErr
 	}
 	if resp.IsError() {
-		err := transformErrorBody(resp.Body())
-		err.HTTPCode = resp.StatusCode()
-		return err
+		return createError(resp)
 	}
 	return nil
 }
@@ -87,38 +104,45 @@ func (c *Client) Execute(req *resty.Request, method string, path string) error {
 // Unexported package methods
 //_______________________________________________________________________
 
-func transformErrorBody(body []byte) Error {
+func mapErrorBodyAPIToDomain(body []byte) ([]ApplicationError, bool) {
 	apiError := api.ErrorResponse{}
 	if err := json.Unmarshal(body, &apiError); err == nil {
-		return mapErrorAPIToDomain(apiError)
+		return mapApplicationErrorsAPIToDomain([]api.ErrorResponse{apiError}), true
 	}
 	apiErrors := api.ErrorResponses{}
 	if err := json.Unmarshal(body, &apiErrors); err == nil {
-		return mapErrorsAPIToDomain(apiErrors)
+		return mapApplicationErrorsAPIToDomain(apiErrors), true
 	}
-	return Error{
-		Message: string(body)}
+	return nil, false
 }
 
-func mapErrorAPIToDomain(apiError api.ErrorResponse) Error {
-	return Error{
-		Message: apiError.ErrorMessage,
-		ApplicationErrors: []ApplicationError{{
-			apiError.ErrorCode,
-			fmt.Sprintf("[Error: Property: %v, %v]", apiError.Property, apiError.ErrorMessage),
-		}},
+func mapApplicationErrorsAPIToDomain(apiErrors api.ErrorResponses) []ApplicationError {
+	transformed := make([]ApplicationError, len(apiErrors))
+	for i := range apiErrors {
+		transformed[i] = mapApplicationErrorAPIToDomain(apiErrors[i])
+	}
+	return transformed
+}
+
+func mapApplicationErrorAPIToDomain(apiError api.ErrorResponse) ApplicationError {
+	return ApplicationError{
+		Code:           apiError.ErrorCode,
+		Property:       apiError.Property,
+		Message:        apiError.ErrorMessage,
+		AdditionalInfo: apiError.MoreInfo,
 	}
 }
 
-func mapErrorsAPIToDomain(apiErrors api.ErrorResponses) Error {
-	errors := make([]ApplicationError, len(apiErrors))
-	msg := ""
-	for i, v := range apiErrors {
-		errors[i] = ApplicationError{v.ErrorCode, v.ErrorMessage}
-		msg = msg + fmt.Sprintf(" [Error %v: Property: %v, %v]", i+1, v.Property, v.ErrorMessage)
+func createError(resp *resty.Response) Error {
+	respBody := resp.Body()
+	err := Error{}
+	err.HTTPCode = resp.StatusCode()
+	err.Message = http.StatusText(err.HTTPCode)
+	appErrors, ok := mapErrorBodyAPIToDomain(respBody)
+	if !ok {
+		err.Message = string(respBody)
+		return err
 	}
-	return Error{
-		Message:           "Multiple errors occurred: " + msg,
-		ApplicationErrors: errors,
-	}
+	err.ApplicationErrors = appErrors
+	return err
 }

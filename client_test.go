@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"testing"
 
 	"github.com/equinix/rest-go/internal/api"
@@ -35,14 +36,14 @@ func TestSingleError(t *testing.T) {
 
 	//then
 	assert.NotNil(t, err, "Error should be returned")
-	assert.Contains(t, err.Error(), fmt.Sprintf("httpCode: %d", respCode), "Error message contains http status code")
 	assert.IsType(t, Error{}, err, "Error should be rest.Error type")
 	restErr := err.(Error)
 	assert.Equal(t, respCode, restErr.HTTPCode, "rest.Error should have valid httpCode")
+	assert.Equal(t, http.StatusText(respCode), restErr.Message, "rest.Error should have valid Message")
+	verifyErrorString(t, restErr, respCode, 1)
 	assert.Equal(t, 1, len(restErr.ApplicationErrors), "rest.Error should have one application error")
-	appError := restErr.ApplicationErrors[0]
-	assert.Equal(t, resp.ErrorCode, appError.Code, "Application error code matches")
-	assert.Contains(t, appError.Message, appError.Message, "Application error message contains response message")
+	verifyApplicationError(t, resp, restErr.ApplicationErrors[0])
+	verifyApplicationErrorString(t, restErr.ApplicationErrors[0].Error())
 }
 
 func ReadJSONData(filePath string, target interface{}) error {
@@ -76,10 +77,12 @@ func TestMultipleError(t *testing.T) {
 	assert.IsType(t, Error{}, err, "Error should be rest.Error type")
 	restErr := err.(Error)
 	assert.Equal(t, respCode, restErr.HTTPCode, "rest.Error should have valid httpCode")
+	assert.Equal(t, http.StatusText(respCode), restErr.Message, "rest.Error should have valid Message")
+	verifyErrorString(t, restErr, respCode, len(resp))
 	assert.Equal(t, len(resp), len(restErr.ApplicationErrors), "rest.Error should have valid number of application errors")
 	for i := range restErr.ApplicationErrors {
-		assert.Equal(t, resp[i].ErrorCode, restErr.ApplicationErrors[i].Code, "Application error code matches")
-		assert.Contains(t, restErr.ApplicationErrors[i].Message, resp[i].ErrorMessage, "Application error message contains response message")
+		verifyApplicationError(t, resp[i], restErr.ApplicationErrors[i])
+		verifyApplicationErrorString(t, restErr.ApplicationErrors[i].Error())
 	}
 }
 
@@ -93,4 +96,21 @@ func SetupMockedClient(method string, url string, respCode int, resp interface{}
 		},
 	)
 	return testHc
+}
+
+func verifyErrorString(t *testing.T, err Error, statusCode int, appErrorsLen int) {
+	statusTxt := http.StatusText(statusCode)
+	regexpStr := fmt.Sprintf("Message: \"%s\", HTTPCode: %d, ApplicationErrors: (\\[.+\\] ){%d}", statusTxt, statusCode, appErrorsLen)
+	assert.Regexp(t, regexp.MustCompile(regexpStr), err.Error(), "Error produces valid error string")
+}
+
+func verifyApplicationError(t *testing.T, apiErr api.ErrorResponse, err ApplicationError) {
+	assert.Equal(t, apiErr.ErrorCode, err.Code, "ErrorCode matches")
+	assert.Equal(t, apiErr.Property, err.Property, "Property matches")
+	assert.Equal(t, apiErr.ErrorMessage, err.Message, "ErrorMessage matches")
+	assert.Equal(t, apiErr.MoreInfo, err.AdditionalInfo, "AdditionalInfo matches")
+}
+
+func verifyApplicationErrorString(t *testing.T, appErrorStr string) {
+	assert.Regexp(t, regexp.MustCompile("^Code: \".*\", Property: \".*\", Message: \".*\", AdditionalInfo: \".*\"$"), appErrorStr, "ApplicationError produces valid error string")
 }
