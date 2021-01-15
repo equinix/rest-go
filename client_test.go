@@ -86,6 +86,30 @@ func TestMultipleError(t *testing.T) {
 	}
 }
 
+type mockedEnvProvider struct {
+	data map[string]string
+}
+
+func (e mockedEnvProvider) getEnv(key string) string {
+	return e.data[key]
+}
+
+func TestIsDebugEnabled(t *testing.T) {
+	//given
+	envToLevelMapping := map[string]bool{
+		"DEBUG": true,
+		"fake":  false,
+		"":      false,
+	}
+	for k, v := range envToLevelMapping {
+		envProvider := mockedEnvProvider{map[string]string{LogLevelEnvVar: k}}
+		//when
+		level := isDebugEnabled(envProvider)
+		//then
+		assert.Equalf(t, v, level, "LogLevel for env variable %q = %q matches", LogLevelEnvVar, k)
+	}
+}
+
 func SetupMockedClient(method string, url string, respCode int, resp interface{}) *http.Client {
 	testHc := &http.Client{}
 	httpmock.ActivateNonDefault(testHc)

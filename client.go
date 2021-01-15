@@ -6,9 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/equinix/rest-go/internal/api"
 	"github.com/go-resty/resty/v2"
+)
+
+const (
+	//LogLevelEnvVar is OS variable name that controlls logging level
+	LogLevelEnvVar = "EQUINIX_REST_LOG"
 )
 
 //Client describes Equinix REST client implementation.
@@ -67,6 +73,7 @@ func (e ApplicationError) Error() string {
 func NewClient(ctx context.Context, baseURL string, httpClient *http.Client) *Client {
 	resty := resty.NewWithClient(httpClient)
 	resty.SetHeader("Accept", "application/json")
+	resty.SetDebug(isDebugEnabled(osEnvProvider{}))
 	return &Client{
 		100,
 		baseURL,
@@ -145,4 +152,25 @@ func createError(resp *resty.Response) Error {
 	}
 	err.ApplicationErrors = appErrors
 	return err
+}
+
+type envProvider interface {
+	getEnv(key string) string
+}
+
+type osEnvProvider struct {
+}
+
+func (osEnvProvider) getEnv(key string) string {
+	return os.Getenv(key)
+}
+
+func isDebugEnabled(envProvider envProvider) bool {
+	envLevel := envProvider.getEnv(LogLevelEnvVar)
+	switch envLevel {
+	case "DEBUG":
+		return true
+	default:
+		return false
+	}
 }
