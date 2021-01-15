@@ -1,3 +1,9 @@
+## 1.2.0 (January 15, 2020)
+
+ENHANCEMENTS:
+
+* setting up `EQUINIX_REST_LOG` environmental variable to `DEBUG` enables Resty debug logging
+
 ## 1.1.0 (November 04, 2020)
 
 ENHANCEMENTS:

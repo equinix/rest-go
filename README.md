@@ -3,6 +3,13 @@
 Equinix REST client written in Go.
 Implementation is based on [Resty client](https://github.com/go-resty/resty).
 
+![Build Status](https://github.com/equinix/rest-go/workflows/Build/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/equinix/rest-go)](https://goreportcard.com/report/github.com/equinix/rest-go)
+[![GoDoc](https://godoc.org/github.com/equinix/rest-go?status.svg)](https://godoc.org/github.com/equinix/rest-go)
+![GitHub](https://img.shields.io/github/license/equinix/rest-go)
+
+---
+
 ## Purpose
 
 Purpose of this module is to wrap Resty REST client with Equinix specific error handling.
@@ -52,3 +59,10 @@ or [Network Edge Go client](https://github.com/equinix/ne-go).
      log.Printf("Got error: %s", err) 
     }
    ```
+
+## Debugging
+
+Debug logging comes from Resty client and logs request and response details to stderr.
+
+Such debug logging can be enabled by setting up `EQUINIX_REST_LOG` environmental
+variable to `DEBUG`
