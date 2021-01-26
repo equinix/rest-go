@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -78,4 +79,18 @@ func TestGetPaginated(t *testing.T) {
 	for i := range apiContent {
 		assert.Equalf(t, apiContent[i].Key, content[i].(TestObject).Key, "Object %d key must match", i)
 	}
+}
+
+func TestFieldValueFromStruct(t *testing.T) {
+	//given
+	type test struct {
+		TestField *int
+	}
+	testFieldValue := 10
+	input := test{&testFieldValue}
+	//when
+	value, err := getFieldValueFromStruct(input, "TestField", reflect.Int)
+	//then
+	assert.Nil(t, err, "Error is not returned")
+	assert.Equal(t, testFieldValue, value.Interface().(int), "Value matches")
 }

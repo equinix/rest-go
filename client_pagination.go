@@ -134,6 +134,9 @@ func getFieldValueFromStruct(target interface{}, fieldName string, fieldKind ref
 		return nil, fmt.Errorf("provided target is not a struct")
 	}
 	val := resultVal.FieldByName(fieldName)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
 	if val.Kind() != fieldKind {
 		return nil, fmt.Errorf("kind of %s field in target struct is not %s", fieldName, fieldKind)
 	}
