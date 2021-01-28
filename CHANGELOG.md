@@ -1,8 +1,15 @@
+## 1.2.1 (January 28, 2020)
+
+BUG FIXES:
+
+* pagination functions support API response structures with pointers
+
 ## 1.2.0 (January 15, 2020)
 
 ENHANCEMENTS:
 
-* setting up `EQUINIX_REST_LOG` environmental variable to `DEBUG` enables Resty debug logging
+* setting up `EQUINIX_REST_LOG` environmental variable to `DEBUG` enables Resty
+debug logging
 
 ## 1.1.0 (November 04, 2020)
 
