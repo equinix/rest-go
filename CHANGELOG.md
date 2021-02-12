@@ -1,10 +1,17 @@
-## 1.2.1 (January 28, 2020)
+## 1.2.2 (February 12, 2021)
+
+BUG FIXES:
+
+* `GetPaginated` properly creates result slice when API structs use pointers
+[equinix/terraform-provider-equinix#41](https://github.com/equinix/terraform-provider-equinix/issues/41)
+
+## 1.2.1 (January 28, 2021)
 
 BUG FIXES:
 
 * pagination functions support API response structures with pointers
 
-## 1.2.0 (January 15, 2020)
+## 1.2.0 (January 15, 2021)
 
 ENHANCEMENTS:
 

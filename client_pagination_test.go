@@ -12,14 +12,14 @@ import (
 )
 
 type TestPaginatedResponse struct {
-	T int          `json:"t"`
-	P int          `json:"p"`
-	S int          `json:"s"`
+	T *int         `json:"t"`
+	P *int         `json:"p"`
+	S *int         `json:"s"`
 	L []TestObject `json:"l"`
 }
 
 type TestObject struct {
-	Key string `json:"key"`
+	Key *string `json:"key"`
 }
 
 func TestGetPaginated(t *testing.T) {

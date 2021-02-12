@@ -101,14 +101,19 @@ func (c Client) GetPaginated(path string, result interface{}, conf *PagingConfig
 		isLast = true
 	}
 	for pageNum := conf.FirstPageNumber + 1; !isLast; pageNum++ {
-		req := c.R().SetResult(result).
+		resValue := reflect.ValueOf(result)
+		if resValue.Kind() == reflect.Ptr {
+			resValue = resValue.Elem()
+		}
+		nextResult := reflect.New(resValue.Type()).Interface()
+		req := c.R().SetResult(nextResult).
 			SetQueryParams(conf.AdditionalParams).
 			SetQueryParam(conf.SizeParamName, strconv.Itoa(c.PageSize)).
 			SetQueryParam(conf.PageParamName, strconv.Itoa(pageNum))
 		if err := c.Execute(req, resty.MethodGet, path); err != nil {
 			return nil, err
 		}
-		resContent, err := getFieldValueFromStruct(result, conf.ContentFieldName, reflect.Slice)
+		resContent, err := getFieldValueFromStruct(nextResult, conf.ContentFieldName, reflect.Slice)
 		if err != nil {
 			return nil, err
 		}
@@ -131,14 +136,14 @@ func getFieldValueFromStruct(target interface{}, fieldName string, fieldKind ref
 		resultVal = resultVal.Elem()
 	}
 	if resultVal.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("provided target is not a struct")
+		return nil, fmt.Errorf("provided target is %s and not a struct", resultVal.Kind())
 	}
 	val := resultVal.FieldByName(fieldName)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}
 	if val.Kind() != fieldKind {
-		return nil, fmt.Errorf("kind of %s field in target struct is not %s", fieldName, fieldKind)
+		return nil, fmt.Errorf("kind of %s field in target struct is %s and not %s", fieldName, val.Kind(), fieldKind)
 	}
 	return &val, nil
 }
