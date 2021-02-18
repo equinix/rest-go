@@ -18,6 +18,17 @@ type TestPaginatedResponse struct {
 	L []TestObject `json:"l"`
 }
 
+type TestOffsetPaginatedResponse struct {
+	Pagination *TestPagination `json:"pagination"`
+	Data       []TestObject    `json:"data"`
+}
+
+type TestPagination struct {
+	Offset *int `json:"offset"`
+	Limit  *int `json:"limit"`
+	Total  *int `json:"total"`
+}
+
 type TestObject struct {
 	Key *string `json:"key"`
 }
@@ -76,6 +87,65 @@ func TestGetPaginated(t *testing.T) {
 	apiContent = append(apiContent, pageOne.L...)
 	apiContent = append(apiContent, pageTwo.L...)
 	apiContent = append(apiContent, pageThree.L...)
+	for i := range apiContent {
+		assert.Equalf(t, apiContent[i].Key, content[i].(TestObject).Key, "Object %d key must match", i)
+	}
+}
+
+func TestGetOffsetPaginated(t *testing.T) {
+	//given
+	var pageOne, pageTwo, pageThree TestOffsetPaginatedResponse
+	if err := ReadJSONData("./test-fixtures/offset_paginated_resp_0.json", &pageOne); err != nil {
+		assert.Failf(t, "cannot read test response due to %s", err.Error())
+	}
+	if err := ReadJSONData("./test-fixtures/offset_paginated_resp_1.json", &pageTwo); err != nil {
+		assert.Failf(t, "cannot read test response due to %s", err.Error())
+	}
+	if err := ReadJSONData("./test-fixtures/offset_paginated_resp_2.json", &pageThree); err != nil {
+		assert.Failf(t, "cannot read test response due to %s", err.Error())
+	}
+	limit := 2
+	testHc := &http.Client{}
+	resourcePath := "/objects"
+	httpmock.ActivateNonDefault(testHc)
+	httpmock.RegisterResponder("GET", fmt.Sprintf("%s%s?limit=%d", baseURL, resourcePath, limit),
+		func(r *http.Request) (*http.Response, error) {
+			resp, _ := httpmock.NewJsonResponse(200, pageOne)
+			return resp, nil
+		},
+	)
+	httpmock.RegisterResponder("GET", fmt.Sprintf("%s%s?limit=%d&offset=2", baseURL, resourcePath, limit),
+		func(r *http.Request) (*http.Response, error) {
+			resp, _ := httpmock.NewJsonResponse(200, pageTwo)
+			return resp, nil
+		},
+	)
+	httpmock.RegisterResponder("GET", fmt.Sprintf("%s%s?limit=%d&offset=4", baseURL, resourcePath, limit),
+		func(r *http.Request) (*http.Response, error) {
+			resp, _ := httpmock.NewJsonResponse(200, pageThree)
+			return resp, nil
+		},
+	)
+
+	//when
+	c := NewClient(context.Background(), baseURL, testHc)
+	c.SetPageSize(limit)
+	content, err := c.GetOffsetPaginated(resourcePath, &TestOffsetPaginatedResponse{},
+		DefaultOffsetPagingConfig().
+			SetDataFieldName("Data").
+			SetPaginationFieldName("Pagination").
+			SetTotalFieldName("Total").
+			SetLimitFieldName("limit").
+			SetOffsetFieldName("offset"))
+
+	//then
+	assert.Nil(t, err, "Error should not be returned")
+	assert.NotNil(t, content, "Content should not be nil")
+	assert.Equal(t, 6, len(content), "")
+	apiContent := make([]TestObject, 0, 6)
+	apiContent = append(apiContent, pageOne.Data...)
+	apiContent = append(apiContent, pageTwo.Data...)
+	apiContent = append(apiContent, pageThree.Data...)
 	for i := range apiContent {
 		assert.Equalf(t, apiContent[i].Key, content[i].(TestObject).Key, "Object %d key must match", i)
 	}

@@ -1,3 +1,10 @@
+## 1.3.0 (February 18, 2021)
+
+FEATURES:
+
+* introduced `GetOffsetPaginated` function that supports pagination controls with
+limit and offset attributes in a separate json object within a response
+
 ## 1.2.2 (February 12, 2021)
 
 BUG FIXES:

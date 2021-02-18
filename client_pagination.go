@@ -72,6 +72,64 @@ func (c *PagingConfig) SetAdditionalParams(v map[string]string) *PagingConfig {
 	return c
 }
 
+//OffsetPaginationConfig is used to describe pagination aspects
+type OffsetPaginationConfig struct {
+	PaginationFieldName string
+	OffsetFieldName     string
+	LimitFieldName      string
+	TotalFieldName      string
+	DataFieldName       string
+	AdditionalParams    map[string]string
+}
+
+//DefaultOffsetPagingConfig returns OffsetPaginationConfig with default values
+func DefaultOffsetPagingConfig() *OffsetPaginationConfig {
+	return &OffsetPaginationConfig{
+		PaginationFieldName: "Pagination",
+		DataFieldName:       "Data",
+		TotalFieldName:      "Total",
+		OffsetFieldName:     "offset",
+		LimitFieldName:      "limit",
+		AdditionalParams:    make(map[string]string),
+	}
+}
+
+//SetPaginationFieldName sets pagination field name
+func (c *OffsetPaginationConfig) SetPaginationFieldName(name string) *OffsetPaginationConfig {
+	c.PaginationFieldName = name
+	return c
+}
+
+//SetOffsetFieldName sets offset field name
+func (c *OffsetPaginationConfig) SetOffsetFieldName(name string) *OffsetPaginationConfig {
+	c.OffsetFieldName = name
+	return c
+}
+
+//SetLimitFieldName sets limit field name
+func (c *OffsetPaginationConfig) SetLimitFieldName(name string) *OffsetPaginationConfig {
+	c.LimitFieldName = name
+	return c
+}
+
+//SetTotalFieldName sets total field name
+func (c *OffsetPaginationConfig) SetTotalFieldName(name string) *OffsetPaginationConfig {
+	c.TotalFieldName = name
+	return c
+}
+
+//SetDataFieldName sets data field name
+func (c *OffsetPaginationConfig) SetDataFieldName(name string) *OffsetPaginationConfig {
+	c.DataFieldName = name
+	return c
+}
+
+//SetAdditionalParams sets additional query parameters that will be used in a request
+func (c *OffsetPaginationConfig) SetAdditionalParams(v map[string]string) *OffsetPaginationConfig {
+	c.AdditionalParams = v
+	return c
+}
+
 //GetPaginated uses HTTP GET requests to retrieve list of all objects from paginated responses.
 //Requests are executed against given path, pagination aspects are controlled with PagingConfig
 func (c Client) GetPaginated(path string, result interface{}, conf *PagingConfig) ([]interface{}, error) {
@@ -94,7 +152,7 @@ func (c Client) GetPaginated(path string, result interface{}, conf *PagingConfig
 		return nil, err
 	}
 	content := make([]interface{}, 0, totalCount)
-	content = appendSliceValue(content, *contentValue)
+	content = appendSliceValue(content, contentValue)
 	recordsFetched := c.PageSize
 	isLast := false
 	if recordsFetched >= totalCount {
@@ -117,13 +175,64 @@ func (c Client) GetPaginated(path string, result interface{}, conf *PagingConfig
 		if err != nil {
 			return nil, err
 		}
-		content = appendSliceValue(content, *resContent)
+		content = appendSliceValue(content, resContent)
 		recordsFetched += c.PageSize
 		if recordsFetched >= totalCount {
 			isLast = true
 		}
 	}
 	return content, nil
+}
+
+//GetOffsetPaginated uses HTTP GET requests to retrieve list of all objects from
+//paginated responses that use offset & limit attributes in a separate pagination object.
+//Requests are executed against given path, pagination aspects are controlled with PagingConfig
+func (c Client) GetOffsetPaginated(path string, result interface{}, conf *OffsetPaginationConfig) ([]interface{}, error) {
+	if reflect.ValueOf(result).Kind() != reflect.Ptr {
+		return nil, fmt.Errorf("operation failed, provided result is not a ptr")
+	}
+	req := c.R().SetResult(result).
+		SetQueryParams(conf.AdditionalParams).
+		SetQueryParam(conf.LimitFieldName, strconv.Itoa(c.PageSize))
+	if err := c.Execute(req, resty.MethodGet, path); err != nil {
+		return nil, err
+	}
+	paginationData, err := getFieldValueFromStruct(result, conf.PaginationFieldName, reflect.Struct)
+	if err != nil {
+		return nil, err
+	}
+	totalValue, err := getFieldValueFromStruct(paginationData.Interface(), conf.TotalFieldName, reflect.Int)
+	if err != nil {
+		return nil, err
+	}
+	dataValue, err := getFieldValueFromStruct(result, conf.DataFieldName, reflect.Slice)
+	if err != nil {
+		return nil, err
+	}
+	totalCount := totalValue.Interface().(int)
+	data := make([]interface{}, 0, totalCount)
+	data = appendSliceValue(data, dataValue)
+	for offset := c.PageSize; offset < totalCount; {
+		resValue := reflect.ValueOf(result)
+		if resValue.Kind() == reflect.Ptr {
+			resValue = resValue.Elem()
+		}
+		nextResult := reflect.New(resValue.Type()).Interface()
+		req := c.R().SetResult(nextResult).
+			SetQueryParams(conf.AdditionalParams).
+			SetQueryParam(conf.LimitFieldName, strconv.Itoa(c.PageSize)).
+			SetQueryParam(conf.OffsetFieldName, strconv.Itoa(offset))
+		if err := c.Execute(req, resty.MethodGet, path); err != nil {
+			return nil, err
+		}
+		responseData, err := getFieldValueFromStruct(nextResult, conf.DataFieldName, reflect.Slice)
+		if err != nil {
+			return nil, err
+		}
+		data = appendSliceValue(data, responseData)
+		offset += c.PageSize
+	}
+	return data, nil
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
@@ -148,7 +257,7 @@ func getFieldValueFromStruct(target interface{}, fieldName string, fieldKind ref
 	return &val, nil
 }
 
-func appendSliceValue(target []interface{}, source reflect.Value) []interface{} {
+func appendSliceValue(target []interface{}, source *reflect.Value) []interface{} {
 	transformed := make([]interface{}, source.Len())
 	for i := 0; i < source.Len(); i++ {
 		transformed[i] = source.Index(i).Interface()
