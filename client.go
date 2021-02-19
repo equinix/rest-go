@@ -89,6 +89,12 @@ func (c *Client) SetPageSize(pageSize int) *Client {
 
 //Execute runs provided request using provider http method and path
 func (c *Client) Execute(req *resty.Request, method string, path string) error {
+	_, err := c.Do(method, path, req)
+	return err
+}
+
+//Do runs given method on a given path with given request and returns response and error
+func (c *Client) Do(method string, path string, req *resty.Request) (*resty.Response, error) {
 	if path[0:1] == "/" {
 		path = path[1:]
 	}
@@ -99,12 +105,12 @@ func (c *Client) Execute(req *resty.Request, method string, path string) error {
 		if resp != nil {
 			restErr.HTTPCode = resp.StatusCode()
 		}
-		return restErr
+		return resp, restErr
 	}
 	if resp.IsError() {
-		return createError(resp)
+		return resp, createError(resp)
 	}
-	return nil
+	return resp, nil
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾

@@ -4,6 +4,8 @@ FEATURES:
 
 * introduced `GetOffsetPaginated` function that supports pagination controls with
 limit and offset attributes in a separate json object within a response
+* introduced `Do` function that runs same logic as previous `Execute` but returns
+not only (potential) error but response as well
 
 ## 1.2.2 (February 12, 2021)
 
