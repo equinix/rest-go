@@ -10,5 +10,6 @@ type ErrorResponse struct {
 	ErrorCode    string `json:"errorCode,omitempty"`
 	ErrorMessage string `json:"errorMessage,omitempty"`
 	MoreInfo     string `json:"moreInfo,omitempty"`
+	Details      string `json:"details,omitempty"`
 	Property     string `json:"property,omitempty"`
 }
