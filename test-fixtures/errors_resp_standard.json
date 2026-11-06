@@ -1,0 +1,48 @@
+[
+  {
+    "errorCode": "EQ-1005101",
+    "errorMessage": "Invalid phone#",
+    "details": "Wrong value of ph#. Correct format is xxx-xxx-xxxx",
+    "correlationId": "06ce37f6-12af-4f47-9d15-e4f8fc77e1c5"
+  },
+  {
+    "errorCode": "EQ-2014102",
+    "errorMessage": "Missing email address",
+    "details": "Email address is mandatory",
+    "correlationId": "b5ce44f6-23ae-5f57-4d11-b4f5fc22a5b2",
+    "additionalInfo": [
+      {
+        "property": "work.emailId",
+        "reason": "Work email address is mandatory"
+      }
+    ]
+  },
+  {
+    "errorCode": "EQ-1912306",
+    "errorMessage": "Wrong customer id",
+    "help": "https://<domain>/help/error/EQ-1912306",
+    "correlationId": "b1ea22f8-34ae-6f67-4a33-b4f5ec99a1c6"
+  },
+  {
+    "errorCode": "EQ-3004502",
+    "errorMessage": "Validation error",
+    "details": "Property validation error",
+    "help": "https://<domain>/help/error/EQ-3004502",
+    "correlationId": "c1ce77f3-78ae-8f87-4a33-f4e5ec77a6a1",
+    "additionalInfo": [
+      {
+        "property": "peerIp",
+        "reason": "Invalid IP address format for peerId",
+        "yourCustomProperty": "..."
+      },
+      {
+        "property": "secondary.peerIp",
+        "reason": "Invalid IP address format for secondary peerId"
+      },
+      {
+        "property": "speed",
+        "reason": "Connection speed value should be in the range of 1G-10G"
+      }
+    ]
+  }
+]
