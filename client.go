@@ -138,11 +138,18 @@ func mapApplicationErrorsAPIToDomain(apiErrors api.ErrorResponses) []Application
 }
 
 func mapApplicationErrorAPIToDomain(apiError api.ErrorResponse) ApplicationError {
+	// older APIs put additional information about the error in a field called
+	// `moreInfo`. Current API standards names this field `details`.
+	var additionalInfo = apiError.Details
+	if additionalInfo == "" && apiError.MoreInfo != "" {
+		additionalInfo = apiError.MoreInfo
+	}
+
 	return ApplicationError{
 		Code:           apiError.ErrorCode,
 		Property:       apiError.Property,
 		Message:        apiError.ErrorMessage,
-		AdditionalInfo: apiError.MoreInfo,
+		AdditionalInfo: additionalInfo,
 	}
 }
 
