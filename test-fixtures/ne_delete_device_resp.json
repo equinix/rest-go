@@ -1,0 +1,14 @@
+[
+  {
+    "errorCode": "EQ-4006901",
+    "errorMessage": "Unable to delete device.",
+    "details": "That Virtual Device has active Connections. Remove those active Connections before deleting the Virtual Device.",
+    "help": "https://<domain.name>/help/error/EQ-4006901",
+    "additionalInfo": [
+      {
+        "property": null,
+        "reason": null
+      }
+    ]
+  }
+]
