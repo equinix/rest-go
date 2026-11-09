@@ -8,6 +8,8 @@ Implementation is based on [Resty client](https://github.com/go-resty/resty).
 [![GoDoc](https://godoc.org/github.com/equinix/rest-go?status.svg)](https://godoc.org/github.com/equinix/rest-go)
 ![GitHub](https://img.shields.io/github/license/equinix/rest-go)
 
+> **Deprecated** This repository is Deprecated, meaning that this software is only supported or maintained by Equinix and its community on a case-by-case basis.  It has been replaced by [`equinix-sdk-go`](https://github.com/equinix/equinix-sdk-go).
+
 ---
 
 ## Purpose
