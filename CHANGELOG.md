@@ -1,3 +1,14 @@
+## 1.4.0 (November 09, 2026)
+
+NOTES:
+
+* updated several dependencies to keep up with security fixes
+* updated minimum required Go version to 1.26
+
+ENHANCEMENTS:
+
+* Expanded error structed to accommodate the `details`,  `correlationId`, `help` and `additionalInfo` fields of  error responses, consistent with recent Equinix API standards.
+
 ## 1.3.0 (February 18, 2021)
 
 FEATURES:
